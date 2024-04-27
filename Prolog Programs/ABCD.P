@@ -1,0 +1,60 @@
+initial_state([[alice,bob,carol,davis],[]]).
+final_state([[],[alice,bob,carol,davis]]).
+create_move(State,Direction,Move):- nth0(0,State,Left),nth0(1,State,Right),(Direction= left_to_right -> select(P1,Left,Left1),select(P2,Left1,_),Move=[left_to_right,[P1,P2]];select(P1,Right,_),Move=[right_to_left,[P1]]).
+
+valid_move(State,Move):-
+    nth0(0,Move,Dir),nth0(1,Move,Members),
+    nth0(0,State,Left),nth0(1,State,Right),
+    (Dir = left_to_right -> length(Members,2),subset(Members,Left);length(Members,1),subset(Members,Right)),
+    valid_move_constraints(Move).
+valid_move_constraints(Move):-
+    nth0(1,Move,Member),nth0(0,Move,Dir),
+    (Dir = left_to_right -> (Member=[bob,carol];Member=[carol|_];Member=[davis|_]);(Member=[carol];Member=[davis];Member=[alice];Member=[bob])).
+transition(State,Move,NewState):- nth0(0,Move,Dir),nth0(1,Move,Members), nth0(0,State,Left),nth0(1,State,Right),
+    (Dir = left_to_right ->
+         subtract(Left,Members,L),
+         append(Members,Right,R),
+         sort(L,SortedL),
+         sort(R,SortedR),
+         NewState=[SortedL,SortedR];
+         subtract(Right,Members,R),
+         append(Members,Left,L),
+         sort(L,SortedL),
+         sort(R,SortedR),
+         NewState=[SortedL,SortedR]).
+goal(State):-    final_state(State).
+
+update_count(Move,C1,C2,C3,C4,C1o,C2o,C3o,C4o) :-
+    nth0(1,Move,Member),
+    nth0(0,Member,Paddler),
+    (   Paddler =  alice ->  C1o is C1+1,C2o is C2, C3o is C3,C4o is C4;
+        Paddler =  bob ->  C2o is C2+1, C1o is C1, C3o is C3, C4o is C4;
+        Paddler =  carol -> C3o is C3+1, C1o is C1, C2o is C2, C4o is C4;
+        C4o is C4+1,C1o is C1, C2o is C2, C3o is C3).
+
+search(State,Path,_,_,Path):-
+    goal(State),
+    traverse(Path,0,0,0,0,_,_,_,_),
+    %valid_moves(Path),
+    write(Path),nl.
+
+search(State,Path,Visited,Direction,L):-
+    \+ member(State,Visited),
+    create_move(State,Direction,Move),
+   valid_move(State,Move),
+    %update_count(Move,C1,C2,C3,C4,C1o,C2o,C3o,C4o),
+    %valid_count(C1o,C2o,C3o,C4o),
+    transition(State,Move,NewState),
+    append(Visited,State,NewVisited),
+    (   Direction = left_to_right -> NewDirection = right_to_left ; NewDirection = left_to_right ),
+    search(NewState,[Move|Path],NewVisited,NewDirection,L).
+
+traverse([],C1,C2,C3,C4,C1,C2,C3,C4):-C1>0,C2>0,C3>0,C4>0.
+traverse([Move|Path],C1,C2,C3,C4,C11,C22,C33,C44):-update_count(Move,C1,C2,C3,C4,C10,C20,C30,C40),traverse(Path,C10,C20,C30,C40,C11,C22,C33,C44).
+peddle_twice(Path):- traverse(Path,0,0,0,0,C10,C20,C30,C40),(C10 = 2 -> write('Alice peddled twice'); C20 = 2 -> write('Bob peddled twice'); C30 = 2 -> write('Carol peddled twice'); C40 = 2 -> write('Davis peddled twice')).
+abcd():-
+    search([[alice,bob,carol,davis],[]],[],[],left_to_right,Path),peddle_twice(Path).
+
+
+
+

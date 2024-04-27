@@ -1,0 +1,3 @@
+subsequence([],_).
+subsequence([H|T],[H|B]):-subsequence(T,B).
+subsequence([M|N],[_|P]):-subsequence([M|N],P).

@@ -1,0 +1,7 @@
+count(_,[],0).
+count(H,[H|T],C):-count(H,T,C1),C is C1+1.
+count(H,[A|B],C):-H=\=A,count(H,B,C).
+
+has_no_triplicates([]).
+has_no_triplicates([H|T]):-count(H,T,C),C<2,has_no_triplicates(T).
+

@@ -1,0 +1,35 @@
+index_of(Element, List, Index) :-
+    nth0(Index, List, Element).
+
+
+concat([H],[],_,_,_,Res1,R2,Res1,Res2):-append(R2,[H],Res2).
+concat([H1|T1],[H2|T2],Equal,Index,Bool,R1,R2,Res1,Res2):-Index1 is Index + 1,Tw_In is 2 * Index1,
+    ( Equal < Tw_In ->
+    (Bool = true -> append(R1,[H1],Temp),Equal1 is Equal + 1,concat(T1,[H2|T2],Equal1,Index,false,Temp,R2,Res1,Res2);
+    append(R1,[H2],F),Equal1 is Equal + 1,concat([H1|T1],T2,Equal1,Index,true,F,R2,Res1,Res2));
+    (Bool = true -> append(R2,[H1],Temp),Equal1 is Equal + 1,concat(T1,[H2|T2],Equal1,Index,false,R1,Temp,Res1,Res2);
+    append(R2,[H2],F),Equal1 is Equal + 1,concat([H1|T1],T2,Equal1,Index,true,R1,F,Res1,Res2))).
+eval([],_,Sum,Sum).
+eval([H|T],Op,Sum,Val) :-
+    (   H = = -> Val = Sum ; integer(H) ->(Op= + ->NewVal is Sum+H, eval(T,Op,NewVal,Val);
+                  NewVal is Sum-H,eval(T,Op,NewVal,Val));
+    (   H = + -> eval(T,+,Sum,Val);
+    eval(T, - ,Sum,Val))).
+
+generate_op([L|T],Op,Return) :- ([L|T]=[_] -> Return=Op;
+                   select(P1,[+,-,=],_),append(Op,[P1],NewOp),generate_op(T,NewOp,Return)).
+correct_eq(L1,L2) :- eval(L1,+,0,Val1),eval(L2,+,0,Val2),Val1=Val2.
+count_eq([],Count,Count).
+count_eq([H|T],Count,Counter):- ( H = = -> (NewCount is Count + 1 , count_eq(T,NewCount,Counter)); count_eq(T,Count,Counter)).
+valid_count(L):- count_eq(L,0,Count),Count = 1 .
+
+
+
+arith([]):- write('Empty list given'),!.
+arith(L):-
+    generate_op(L,[],Return),
+    valid_count(Return),
+    index_of(=,Return,Index),
+    concat(L,Return,0,Index,true,[],[],Res1,Res2),
+    correct_eq(Res1,Res2),
+    append(Res1,Res2,Result),atomic_list_concat(Result,'',Atom1),atom_string(Atom1,X),write(X),!.
